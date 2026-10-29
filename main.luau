@@ -4040,7 +4040,11 @@ BloomEffect.Parent = Lighting
 print("[BananaHook] loading Obelus UI…")
 local library, notifications, themes
 local okUI, errUI = pcall(function()
-	library, notifications, themes = loadstring(game:HttpGet("https://raw.githubusercontent.com/i77lhm/Libraries/refs/heads/main/Obelus/Library.lua"))()
+	local raw = game:HttpGet("https://raw.githubusercontent.com/i77lhm/Libraries/refs/heads/main/Obelus/Library.lua")
+	-- Real / some environments break on game.Players; force GetService
+	raw = raw:gsub("game%.Players%.LocalPlayer%.PlayerGui", 'game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")')
+	raw = raw:gsub("game%.Players%.LocalPlayer", 'game:GetService("Players").LocalPlayer')
+	library, notifications, themes = loadstring(raw)()
 end)
 if not okUI or not library then
 	warn("[BananaHook] Obelus failed to load:", errUI)
