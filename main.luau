@@ -6,9 +6,16 @@ getgenv().ns__BananaHook__Executed = true
 pcall(clearteleportqueue or clear_teleport_queue or clearqueueonteleport)
 
 print("[BananaHook] starting…")
-repeat task.wait(0.25) until game:IsLoaded()
-if workspace.DistributedGameTime < 3 then
-	task.wait(3 - workspace.DistributedGameTime)
+task.wait(0.1)
+print("[BananaHook] after tiny wait")
+if not game:IsLoaded() then
+	print("[BananaHook] waiting for IsLoaded")
+	repeat task.wait(0.1) until game:IsLoaded()
+end
+print("[BananaHook] game:IsLoaded true")
+print("[BananaHook] DistributedGameTime =", workspace.DistributedGameTime)
+if workspace.DistributedGameTime < 1.5 then
+	task.wait(1.5 - workspace.DistributedGameTime)
 end
 print("[BananaHook] game loaded")
 
@@ -17,8 +24,19 @@ do
 	local Players = game:GetService("Players")
 	repeat task.wait() until Players.LocalPlayer
 	LocalPlayer = Players.LocalPlayer
-	MenuScreenGui = LocalPlayer:WaitForChild("PlayerGui", 9e9):WaitForChild("MenuScreenGui", 9e9)
-	print("[BananaHook] MenuScreenGui found")
+	print("[BananaHook] waiting for PlayerGui…")
+	local pg = LocalPlayer:WaitForChild("PlayerGui", 15)
+	if not pg then
+		warn("[BananaHook] PlayerGui timeout")
+		return
+	end
+	print("[BananaHook] PlayerGui ok, waiting MenuScreenGui…")
+	MenuScreenGui = pg:WaitForChild("MenuScreenGui", 15)
+	if not MenuScreenGui then
+		warn("[BananaHook] MenuScreenGui timeout – continuing anyway")
+	else
+		print("[BananaHook] MenuScreenGui found")
+	end
 
 	local Method, ns__require = "Unknown", nil
 	local ExecutorName = (identifyexecutor and identifyexecutor()) or (getexecutorname and getexecutorname()) or "Unknown"
