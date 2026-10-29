@@ -1,19 +1,35 @@
--- Variables 
-    local uis = game:GetService("UserInputService") 
-    local players = game:GetService("Players") 
-    local ws = game:GetService("Workspace")
-    local rs = game:GetService("ReplicatedStorage")
-    local http_service = game:GetService("HttpService")
-    local gui_service = game:GetService("GuiService")
-    local lighting = game:GetService("Lighting")
-    local run = game:GetService("RunService")
-    local stats = game:GetService("Stats")
-    local coregui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-    local debris = game:GetService("Debris")
-    local tween_service = game:GetService("TweenService")
-    local sound_service = game:GetService("SoundService")
+-- Variables (BananaHook Real-safe)
+    local function __svc(name)
+        local ok, s = pcall(game.GetService, game, name)
+        return ok and s or nil
+    end
+    local uis = __svc("UserInputService")
+    local players = __svc("Players")
+    local ws = __svc("Workspace") or workspace
+    local rs = __svc("ReplicatedStorage")
+    local http_service = __svc("HttpService")
+    local gui_service = __svc("GuiService")
+    local lighting = __svc("Lighting")
+    local run = __svc("RunService")
+    local stats = __svc("Stats")
+    local debris = __svc("Debris")
+    local tween_service = __svc("TweenService")
+    local sound_service = __svc("SoundService")
 
-    local vec2 = Vector2.new
+    local __lp = players and players.LocalPlayer
+    if players and not __lp then
+        local t0 = os.clock()
+        repeat task.wait() __lp = players.LocalPlayer until __lp or os.clock()-t0 > 10
+    end
+    local coregui
+    if __lp then
+        coregui = __lp:FindFirstChild("PlayerGui") or __lp:WaitForChild("PlayerGui", 5)
+    end
+    if not coregui then
+        coregui = __svc("CoreGui") or game:GetService("CoreGui")
+    end
+
+local vec2 = Vector2.new
     local vec3 = Vector3.new
     local dim2 = UDim2.new
     local dim = UDim.new 
@@ -34,7 +50,7 @@
     local numkey = NumberSequenceKeypoint.new
 
     local camera = ws.CurrentCamera
-    local lp = players.LocalPlayer or game:GetService("Players").LocalPlayer
+    local lp = __lp or (players and players.LocalPlayer)
     local mouse = lp and lp:GetMouse() 
     local gui_offset = gui_service:GetGuiInset().Y
 
