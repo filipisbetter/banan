@@ -1,10 +1,13 @@
--- Variables (BananaHook Real-safe)
+-- Variables (BananaHook Real-safe v2)
     local function __svc(name)
-        local ok, s = pcall(game.GetService, game, name)
+        local ok, s = pcall(function() return game:GetService(name) end)
+        if ok and s then return s end
+        -- some executors expose services on game directly in weird ways
+        ok, s = pcall(function() return game[name] end)
         return ok and s or nil
     end
+
     local uis = __svc("UserInputService")
-    local players = __svc("Players")
     local ws = __svc("Workspace") or workspace
     local rs = __svc("ReplicatedStorage")
     local http_service = __svc("HttpService")
@@ -16,17 +19,49 @@
     local tween_service = __svc("TweenService")
     local sound_service = __svc("SoundService")
 
-    local __lp = players and players.LocalPlayer
-    if players and not __lp then
-        local t0 = os.clock()
-        repeat task.wait() __lp = players.LocalPlayer until __lp or os.clock()-t0 > 10
+    -- avoid GetService("Players") entirely if it throws on Real
+    local players
+    do
+        local ok, s = pcall(function() return game:GetService("Players") end)
+        if ok and s then
+            players = s
+        else
+            -- fallback: try findfirstchild style / getrenv
+            ok, s = pcall(function()
+                if getrenv then
+                    local e = getrenv()
+                    return e and e.game and e.game:GetService("Players")
+                end
+            end)
+            if ok and s then players = s end
+        end
     end
+
+    local __lp
+    if players then
+        __lp = players.LocalPlayer
+        if not __lp then
+            local t0 = os.clock()
+            repeat task.wait(0.05) __lp = players.LocalPlayer until __lp or os.clock()-t0 > 8
+        end
+    end
+    -- last resort: pick first player if somehow available
+    if not __lp and players then
+        local ok, list = pcall(function() return players:GetPlayers() end)
+        if ok and list and list[1] then __lp = list[1] end
+    end
+
     local coregui
     if __lp then
-        coregui = __lp:FindFirstChild("PlayerGui") or __lp:WaitForChild("PlayerGui", 5)
+        local ok, pg = pcall(function() return __lp:FindFirstChild("PlayerGui") or __lp:WaitForChild("PlayerGui", 3) end)
+        if ok then coregui = pg end
     end
     if not coregui then
-        coregui = __svc("CoreGui") or game:GetService("CoreGui")
+        coregui = __svc("CoreGui")
+    end
+    if not coregui then
+        -- absolute last resort
+        pcall(function() coregui = game:GetService("CoreGui") end)
     end
 
 local vec2 = Vector2.new
@@ -50,8 +85,8 @@ local vec2 = Vector2.new
     local numkey = NumberSequenceKeypoint.new
 
     local camera = ws.CurrentCamera
-    local lp = __lp or (players and players.LocalPlayer)
-    local mouse = lp and lp:GetMouse() 
+    local lp = __lp
+    local mouse = lp and lp:GetMouse()
     local gui_offset = gui_service:GetGuiInset().Y
 
     local max = math.max 
