@@ -1,5 +1,7 @@
+print("[BananaHook] main entered")
 if getgenv().ns__BananaHook__Executed then
-	return
+	print("[BananaHook] already executed – clearing guard and continuing")
+	getgenv().ns__BananaHook__Executed = nil
 end
 
 getgenv().ns__BananaHook__Executed = true
